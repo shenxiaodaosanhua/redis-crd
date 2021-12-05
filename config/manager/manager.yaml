@@ -24,6 +24,8 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      imagePullSecrets:
+        - name: qingcloud
       securityContext:
         runAsNonRoot: true
       containers:
