@@ -1,0 +1,7 @@
+apiVersion: myapp.ipicture.vip/v1
+kind: Redis
+metadata:
+  name: my-redis
+  namespace: default
+spec:
+  port: 6379

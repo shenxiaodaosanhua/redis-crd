@@ -1,0 +1,16 @@
+domain: ipicture.vip
+layout:
+- go.kubebuilder.io/v3
+projectName: redis-crd
+repo: redis-crd
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: ipicture.vip
+  group: myapp
+  kind: Redis
+  path: redis-crd/api/v1
+  version: v1
+version: "3"
