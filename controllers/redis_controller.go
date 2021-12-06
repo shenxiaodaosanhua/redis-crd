@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"redis-crd/helper"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -56,6 +57,8 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		fmt.Println(err)
 	} else {
 		fmt.Println("得到对象", redis)
+		err := helper.Create(r.Client, redis)
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

@@ -39,6 +39,8 @@ spec:
               port:
                 description: Foo is an example field of Redis. Edit redis_types.go
                   to remove/update Foo string `json:"foo,omitempty"`
+                maximum: 60000
+                minimum: 81
                 type: integer
             type: object
           status:

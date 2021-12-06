@@ -30,6 +30,8 @@ type RedisSpec struct {
 
 	// Foo is an example field of Redis. Edit redis_types.go to remove/update
 	//Foo string `json:"foo,omitempty"`
+	//+kubebuilder:validation:Maximum:=60000
+	//+kubebuilder:validation:Minimum:=81
 	Port int `json:"port,omitempty"`
 }
 
