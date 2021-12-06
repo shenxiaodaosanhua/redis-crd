@@ -71,11 +71,11 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker -H 139.198.187.175 build -t ${IMG} .
+	docker build -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
-	docker -H 139.198.187.175 push ${IMG}
+	docker push ${IMG}
 
 ##@ Deployment
 
