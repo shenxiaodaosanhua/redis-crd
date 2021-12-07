@@ -13,7 +13,7 @@ func GetRedisPodNames(redis *apiv1.Redis) []string {
 	for i := 0; i < redis.Spec.Num; i++ {
 		names[i] = fmt.Sprintf("%s-%d", redis.Name, i)
 	}
-
+	fmt.Println("names:", names)
 	return names
 }
 
@@ -32,12 +32,12 @@ func Create(client client.Client, redis *apiv1.Redis, name string) (string, erro
 		return "", nil
 	}
 	pod := &corev1.Pod{}
-	pod.Name = redis.Name
+	pod.Name = name
 	pod.Namespace = redis.Namespace
 
 	pod.Spec.Containers = []corev1.Container{
 		{
-			Name:            redis.Name,
+			Name:            name,
 			Image:           "redis:6.2-alpine3.15",
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Ports: []corev1.ContainerPort{

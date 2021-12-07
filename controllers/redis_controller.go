@@ -18,7 +18,8 @@ package controllers
 
 import (
 	"context"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"redis-crd/helper"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -50,7 +51,6 @@ type RedisReconciler struct {
 func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
 	redis := &myappv1.Redis{}
 	if err := r.Get(ctx, req.NamespacedName, redis); err != nil {
 		return ctrl.Result{}, err
@@ -85,11 +85,8 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 func (r *RedisReconciler) ClearRedis(ctx context.Context, redis *myappv1.Redis) error {
 	list := redis.Finalizers
 	for _, name := range list {
-		err := r.Client.Delete(ctx, &v1.Pod{
-			ObjectMeta: ctrl.ObjectMeta{
-				Name:      name,
-				Namespace: redis.Namespace,
-			},
+		err := r.Client.Delete(ctx, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: redis.Namespace},
 		})
 		if err != nil {
 			return err
