@@ -18,10 +18,9 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"redis-crd/helper"
-
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"redis-crd/helper"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -54,14 +53,51 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// TODO(user): your logic here
 	redis := &myappv1.Redis{}
 	if err := r.Get(ctx, req.NamespacedName, redis); err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("得到对象", redis)
-		err := helper.Create(r.Client, redis)
 		return ctrl.Result{}, err
+	} else {
+		if !redis.DeletionTimestamp.IsZero() {
+			return ctrl.Result{}, r.ClearRedis(ctx, redis)
+		}
+		names := helper.GetRedisPodNames(redis)
+		isAppend := false
+		for _, name := range names {
+			n, err := helper.Create(r.Client, redis, name)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+			if n == "" {
+				continue
+			}
+			redis.Finalizers = append(redis.Finalizers, n)
+			isAppend = true
+		}
+		if isAppend {
+			err = r.Client.Update(ctx, redis)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *RedisReconciler) ClearRedis(ctx context.Context, redis *myappv1.Redis) error {
+	list := redis.Finalizers
+	for _, name := range list {
+		err := r.Client.Delete(ctx, &v1.Pod{
+			ObjectMeta: ctrl.ObjectMeta{
+				Name:      name,
+				Namespace: redis.Namespace,
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	redis.Finalizers = []string{}
+	return r.Client.Update(ctx, redis)
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -36,6 +36,10 @@ spec:
           spec:
             description: RedisSpec defines the desired state of Redis
             properties:
+              num:
+                maximum: 100
+                minimum: 1
+                type: integer
               port:
                 description: Foo is an example field of Redis. Edit redis_types.go
                   to remove/update Foo string `json:"foo,omitempty"`

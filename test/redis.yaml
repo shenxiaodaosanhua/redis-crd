@@ -4,4 +4,5 @@ metadata:
   name: my-redis
   namespace: default
 spec:
-  port: 2379
+  port: 6379
+  num: 2
