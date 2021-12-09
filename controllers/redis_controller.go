@@ -41,8 +41,8 @@ import (
 // RedisReconciler reconciles a Redis object
 type RedisReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	recorder record.EventRecorder
+	Scheme        *runtime.Scheme
+	EventRecorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=myapp.ipicture.vip,resources=redis,verbs=get;list;watch;create;update;patch;delete
@@ -94,6 +94,7 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	//收缩副本
 	if len(redis.Finalizers) > len(names) {
+		r.EventRecorder.Event(redis, corev1.EventTypeNormal, "Upgrade", "副本收缩")
 		isUpdate = true
 		err = r.DeleteIfSurplus(ctx, names, redis)
 		if err != nil {
@@ -102,7 +103,13 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	if isUpdate {
+		r.EventRecorder.Event(redis, corev1.EventTypeNormal, "Updated", "更新资源")
 		err = r.Client.Update(ctx, redis)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		redis.Status.RedisNum = len(redis.Finalizers)
+		err = r.Status().Update(ctx, redis)
 		if err != nil {
 			return ctrl.Result{}, err
 		}

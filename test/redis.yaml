@@ -5,4 +5,4 @@ metadata:
   namespace: default
 spec:
   port: 6379
-  num: 1
+  num: 2

@@ -43,8 +43,11 @@ type RedisSpec struct {
 type RedisStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	RedisNum int `json:"num,omitempty"`
 }
 
+//+kubebuilder:printcolumn:JSONPath=".status.num",name=redis_num,type=integer
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
