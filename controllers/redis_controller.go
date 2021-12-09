@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"redis-crd/helper"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -40,7 +41,8 @@ import (
 // RedisReconciler reconciles a Redis object
 type RedisReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=myapp.ipicture.vip,resources=redis,verbs=get;list;watch;create;update;patch;delete
@@ -60,47 +62,49 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	_ = log.FromContext(ctx)
 
 	redis := &myappv1.Redis{}
-	if err := r.Get(ctx, req.NamespacedName, redis); err != nil {
+	err := r.Get(ctx, req.NamespacedName, redis)
+	if err != nil {
+		fmt.Println(err)
 		return ctrl.Result{}, err
-	} else {
-		if !redis.DeletionTimestamp.IsZero() {
-			fmt.Println("正在删除")
-			return ctrl.Result{}, r.ClearRedis(ctx, redis)
+	}
+
+	if !redis.DeletionTimestamp.IsZero() {
+		fmt.Println("正在删除")
+		return ctrl.Result{}, r.ClearRedis(ctx, redis)
+	}
+	fmt.Println("-------")
+	names := helper.GetRedisPodNames(redis)
+	isUpdate := false
+	for _, name := range names {
+		n, err := helper.Create(r.Client, redis, name, r.Scheme)
+		if err != nil {
+			return ctrl.Result{}, err
 		}
-		fmt.Println("-------")
-		names := helper.GetRedisPodNames(redis)
-		isUpdate := false
-		for _, name := range names {
-			n, err := helper.Create(r.Client, redis, name, r.Scheme)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-			if n == "" {
-				continue
-			}
-
-			if controllerutil.ContainsFinalizer(redis, n) {
-				continue
-			}
-
-			redis.Finalizers = append(redis.Finalizers, n)
-			isUpdate = true
+		if n == "" {
+			continue
 		}
 
-		//收缩副本
-		if len(redis.Finalizers) > len(names) {
-			isUpdate = true
-			err = r.DeleteIfSurplus(ctx, names, redis)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
+		if controllerutil.ContainsFinalizer(redis, n) {
+			continue
 		}
 
-		if isUpdate {
-			err = r.Client.Update(ctx, redis)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
+		redis.Finalizers = append(redis.Finalizers, n)
+		isUpdate = true
+	}
+
+	//收缩副本
+	if len(redis.Finalizers) > len(names) {
+		isUpdate = true
+		err = r.DeleteIfSurplus(ctx, names, redis)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	if isUpdate {
+		err = r.Client.Update(ctx, redis)
+		if err != nil {
+			return ctrl.Result{}, err
 		}
 	}
 
